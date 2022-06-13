@@ -88,6 +88,11 @@ char letters[10] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
 
 /******************************************************************************/
 
+/********************************************************************************
+ * Draws the ship select phase board to screen
+ * Parameters:
+ *  - display_map: reference to the display map to be drawn
+********************************************************************************/
 void draw_ship_select_board(int display_map[2][10][10]) {
   int row, subrow, table, column, subcolumn;
   int selected_graphics_cell, selected_color;
@@ -112,7 +117,6 @@ void draw_ship_select_board(int display_map[2][10][10]) {
   for(row = 0; row < 10; row++) {
     // Print the left column of hastags
     printf("%s# %s", color_codes[2], color_codes[0]);
-    // We need to print two tables: the player ship table and the computer hits table
 
     // Print the left legend and the vertical table row start line
     printf("                         %c |", letters[row]);
@@ -127,7 +131,7 @@ void draw_ship_select_board(int display_map[2][10][10]) {
         selected_graphics_cell = display_map[0][row][column];
         // Find the color of the subcolumn we want to print
         selected_color = graphics_cells_colors[selected_graphics_cell][subcolumn];
-        // Print the column in its wanted colour
+        // Print the subcolumn in its wanted colour
         printf("%s%c", color_codes[selected_color], 
             graphics_cells[selected_graphics_cell][subcolumn]);
         // Reset color
@@ -155,8 +159,8 @@ void draw_ship_select_board(int display_map[2][10][10]) {
 
 /********************************************************************************
  * Fills a display map with default state
- *
- * display_map: reference to the display map that needs to be initialized
+ * Parameters:
+ *  - display_map: reference to the display map that needs to be initialized
 ********************************************************************************/
 void init_display_map(int display_map[2][10][10]) {
   int i, j, k;
@@ -171,8 +175,8 @@ void init_display_map(int display_map[2][10][10]) {
 
 /********************************************************************************
  * Fills a ship map with default state
- *
- * ship_map: reference to the ship map that needs to be initialized
+ * Parameters
+ *  - ship_map: reference to the ship map that needs to be initialized
 ********************************************************************************/
 void init_ship_map(int ship_map[10][10]) {
   int i, j;
@@ -183,9 +187,17 @@ void init_ship_map(int ship_map[10][10]) {
   }
 }
 
+/********************************************************************************
+ * Gets coordinate as input from the user
+ * Parameters
+ *  - row: reference to the numerical index of the row the user has inputed
+ *  - column: reference to the numerical index of the column 
+ *  		  the user has inputed
+ * Returns: true if succesful
+********************************************************************************/
 bool get_input_coordinate(int* row, int* column) {
   char raw_row;
-  int raw_column;
+  int raw_column, tmp_row, tmp_column;
   // Get input and fail if not succesful
   if(!scanf("%c%d", &raw_row, &raw_column)) return false;
 
@@ -193,27 +205,62 @@ bool get_input_coordinate(int* row, int* column) {
   while (getchar() != '\n');
 
   // Begin checking column
-  *column = raw_column - 1;
-  if(*column < 0 || *column > 9) return false;
+  tmp_column = raw_column - 1;
+  if(tmp_column < 0 || tmp_column > 9) return false;
 
   // Then check row
   // Subtract ascii offset to get row number
-  *row = raw_row - 65;
-  if(*row < 0 || *row > 9) {
+  tmp_row = raw_row - 65;
+  if(tmp_row < 0 || tmp_row > 9) {
     // If it's not correct in uppercase, we try lowercase
-    *row = raw_row - 97;
-    if(*row < 0 || *row > 9) return false;
+    tmp_row = raw_row - 97;
+    if(tmp_row < 0 || tmp_row > 9) return false;
   }
+
+  // Everything was succesful, so we set our output variables
+  *row = tmp_row;
+  *column = tmp_column;
 
   return true;
 }
 
+/********************************************************************************
+ * Get ship direcion as input from user
+ * Parameters
+ *  - direction: reference to the direction [0: horizontal, 1: vertical]
+ * Returns: true if succesful
+********************************************************************************/
+bool get_ship_direction(int *direction) {
+  char raw_direction;
+  // Get input and fail if not succesful
+  if(!scanf("%c", &raw_direction)) return false;
+
+  // Flush any unwanted characters
+  while (getchar() != '\n');
+
+  // See if inputed carachter is valid
+  if(raw_direction == 'o') {
+    *direction = 0;
+    return true;
+  } else if(raw_direction == 'v') {
+    *direction = 1;
+    return true;
+  }
+
+  return false;
+}
+
+/********************************************************************************
+ * Handle positioning for a single width ship
+ * Parameters
+ *  - display_map: reference to the display map on which to save the ship
+ *  - player_ship_map: reference to the player's ship map
+ *  - ship_index: index of the ship to be positioned
+********************************************************************************/
 void position_single_ship(int display_map[2][10][10], int player_ship_map[10][10], int ship_index) {
-  char raw_row;
-  int raw_column;
   int row, column;
-  bool input_result = true;
-  bool already_positioned = false;
+  bool input_result = true; // Was the input succesful?
+  bool already_positioned = false;	// Is there already a ship here?
 
   while(true) {
     // Draw the ship select board
@@ -245,40 +292,25 @@ void position_single_ship(int display_map[2][10][10], int player_ship_map[10][10
   }
 }
 
-bool get_ship_direction(int *direction) {
-  char raw_direction;
-  // Get input and fail if not succesful
-  if(!scanf("%c", &raw_direction)) return false;
-
-  // Flush any unwanted characters
-  while (getchar() != '\n');
-
-  if(raw_direction == 'o') {
-    *direction = 0;
-    return true;
-  } else if(raw_direction == 'v') {
-    *direction = 1;
-    return true;
-  }
-
-  return false;
-
-}
+/********************************************************************************
+ * Handle positioning for a multiple width ship
+ * Parameters
+ *  - display_map: reference to the display map on which to save the ship
+ *  - player_ship_map: reference to the player's ship map
+ *  - ship_index: index of the ship to be positioned
+ *  - ship_lives: dimension of the ship
+********************************************************************************/
 void position_multi_ship(int display_map[2][10][10], int player_ship_map[10][10], int ship_index, int ship_lives) {
-  char raw_row, raw_direction;
-  int raw_column;
   int start_row, start_column;
-  bool is_horizontal_possible, is_vertical_possible;
-  // Is_X_possible: 0 -> possible, 1 -> out of board, 2 -> ship in the way
-  int direction;
-  // Direction: 0 -> horizontal, 1 -> vertical
+  bool is_horizontal_possible, is_vertical_possible; // Is_X_possible: 0 -> possible, 
+                                                     // 1 -> out of board, 2 -> ship in the way
+  int direction;	// Direction: 0 -> horizontal, 1 -> vertical
 
-  int input_result = 0;
-  // Input Result: 0 -> success, 1 -> starting cell doesn't exist / ship out of board,
-  //               2 -> starting cell already used / ship crosses other ship
-  //               3 -> ship can't be positioned starting from this cell
+  int input_result = 0;	// Input Result: 0 -> success, 1 -> starting cell doesn't exist / ship out of board,
+						//               2 -> starting cell already used / ship crosses other ship
+						//               3 -> ship can't be positioned starting from this cell
   
-  int i;
+  int i;	// Counter
   
   // Get ship start position
   while(true) {
@@ -316,6 +348,7 @@ void position_multi_ship(int display_map[2][10][10], int player_ship_map[10][10]
     // Verify that we can fit a ship there vertically and horizontally
     is_vertical_possible = true;
     is_horizontal_possible = true;
+	// Check vertical
     for(i = 0; i < ship_lives; i++) {
       // Check if cell is inside board boundaries
       if(start_row + i >= 10) {
@@ -326,6 +359,7 @@ void position_multi_ship(int display_map[2][10][10], int player_ship_map[10][10]
       if(player_ship_map[start_row + i][start_column] != 99)
         is_vertical_possible = false;
     }
+	// Check horizontal
     for(i = 0; i < ship_lives; i++) {
       // Check if cell is inside board boundaries
       if(start_column + i >= 10) {
@@ -372,12 +406,8 @@ void position_multi_ship(int display_map[2][10][10], int player_ship_map[10][10]
       break;
     }
   }
-  else if(is_horizontal_possible) direction = 0;
-  else direction = 1;
-
-  /* printf("Direction [0: horizontal, 1: vertical]: %d", direction);
-  fflush(stdout);
-  sleep(5); */
+  else if(is_horizontal_possible) direction = 0;	// Only horizontal is possible
+  else direction = 1;	// Only vertical is possible
 
   // Position ship on display map and player ship map
   if(direction == 0) {
@@ -399,27 +429,33 @@ void position_multi_ship(int display_map[2][10][10], int player_ship_map[10][10]
   }
 }
 
-void draw_game_info() {
-  printf("%s#                                                                                               #%s\n", color_codes[2], color_codes[0]);
-}
-
+/********************************************************************************
+ * Handle ship poisitioning phase
+ * Parameters
+ *  - display_map: reference to the display map on which to save the ships
+ *  - player_ship_map: reference to the player's ship map
+ *  - player_ship_lives: reference to the array of the amount of lives
+ *  					 each ship has
+********************************************************************************/
 void ship_positioning_stage(int display_map[2][10][10], int player_ship_map[10][10], int player_ship_lives[10]) {
-  // Ship selection specific maps
   int current_ship;
-  bool has_positioned_ship = false;
-  int ship_position_row, ship_position_column;
-  int input_status = 1;
 
+  // Iterate on every ship
   for(current_ship = 0; current_ship < 10; current_ship++) {
+    // Use the appropriate positioning function for single and mutiple width ships
     if(player_ship_lives[current_ship] == 1) position_single_ship(display_map, player_ship_map, current_ship);
     else position_multi_ship(display_map, player_ship_map, current_ship, player_ship_lives[current_ship]);
-    /* printf("Positioning ship %d", current_ship);
-    fflush(stdout);
-    sleep(1); */
   }
 }
 
-void position_random_single_ship(int player_ship_map[10][10], int ship_index) {
+
+/********************************************************************************
+ * Randomly position a single width ship
+ * Parameters
+ *  - ship_map: reference to the player's ship map
+ *  - ship_index: index of the ship to position
+********************************************************************************/
+void position_random_single_ship(int ship_map[10][10], int ship_index) {
   int row, column;
   bool already_positioned = false;
 
@@ -429,20 +465,26 @@ void position_random_single_ship(int player_ship_map[10][10], int ship_index) {
     column = (rand() % 10);
 
     // If we already have a ship positioned there, we pass and change the message
-    if(player_ship_map[row][column] != 99) {
+    if(ship_map[row][column] != 99) {
       already_positioned = true;
       continue;
     }
 
     // Position the ship on the display map and ship map
-    player_ship_map[row][column] = ship_index;
+    ship_map[row][column] = ship_index;
 
     // We're done positioning
     return;
   }
 }
 
-void position_random_multi_ship(int player_ship_map[10][10], int ship_index, int ship_lives) {
+/********************************************************************************
+ * Randomly position a multiple width ship
+ * Parameters
+ *  - ship_map: reference to the player's ship map
+ *  - ship_index: index of the ship to position
+********************************************************************************/
+void position_random_multi_ship(int ship_map[10][10], int ship_index, int ship_lives) {
   int start_row, start_column;
   bool is_horizontal_possible, is_vertical_possible;
   // Is_X_possible: 0 -> possible, 1 -> out of board, 2 -> ship in the way
@@ -458,7 +500,7 @@ void position_random_multi_ship(int player_ship_map[10][10], int ship_index, int
     start_column = (rand() % 10);
 
     // Verify that there isn't a ship already there
-    if(player_ship_map[start_row][start_column] != 99) {
+    if(ship_map[start_row][start_column] != 99) {
       continue;
     }
 
@@ -472,7 +514,7 @@ void position_random_multi_ship(int player_ship_map[10][10], int ship_index, int
         break;
       }
       // Check if cell is available
-      if(player_ship_map[start_row + i][start_column] != 99)
+      if(ship_map[start_row + i][start_column] != 99)
         is_vertical_possible = false;
     }
     for(i = 0; i < ship_lives; i++) {
@@ -482,7 +524,7 @@ void position_random_multi_ship(int player_ship_map[10][10], int ship_index, int
         break;
       }
       // Check if cell is available
-      if(player_ship_map[start_row][start_column + i] != 99) 
+      if(ship_map[start_row][start_column + i] != 99) 
         is_horizontal_possible = false;
     }
 
@@ -496,12 +538,11 @@ void position_random_multi_ship(int player_ship_map[10][10], int ship_index, int
     break;
   }
   
-  // We need to ask the user for a position only if the ship can be placed
+  // We need to randomly select an orientation only if both vertical and horizontal are possible
   // both horizontally and vertically, else we set it to what's possible
   if(is_horizontal_possible && is_vertical_possible) {
     // Get ship direction
     while(true) {
-
 
       // Get random direction
       direction = (rand() % 1);
@@ -509,37 +550,47 @@ void position_random_multi_ship(int player_ship_map[10][10], int ship_index, int
       break;
     }
   }
-  else if(is_horizontal_possible) direction = 0;
-  else direction = 1;
+  else if(is_horizontal_possible) direction = 0; // Only horizontal is possible
+  else direction = 1; // Only vertical is possible
 
-  /* printf("Direction [0: horizontal, 1: vertical]: %d", direction);
-  fflush(stdout);
-  sleep(5); */
 
-  // Position ship on display map and player ship map
+  // Position ship on ship map
   if(direction == 0)
     // For horizontal ships
     for(i = 0; i < ship_lives; i++) {
-      player_ship_map[start_row][start_column + i] = ship_index;
+      ship_map[start_row][start_column + i] = ship_index;
     }
   else {
     // For vertical ships
     for(i = 0; i < ship_lives; i++) {
-      player_ship_map[start_row + i][start_column] = ship_index;
+      ship_map[start_row + i][start_column] = ship_index;
     }
   }
 }
 
+/********************************************************************************
+ * Handle random positioning for the computer's ships
+ * Parameters
+ *  - ship_map: reference to the computer's ship map
+ *  - ship_lives: array containing the lives of ships to be positioned
+********************************************************************************/
 void position_random_ships(int ship_map[10][10], int ship_lives[10]) {
   int current_ship;
 
+  // Iterate on every ship
   for(current_ship = 0; current_ship < 10; current_ship++) {
+    // Use appropriate function for single and multiple witdth ship
     if(ship_lives[current_ship] == 1) position_random_single_ship(ship_map, current_ship);
     else position_random_multi_ship(ship_map, current_ship, ship_lives[current_ship]);
   }
 
 }
 
+/********************************************************************************
+ * Draws the main game board to screen
+ * Parameters:
+ *  - display_map: reference to the display map to be drawn
+********************************************************************************/
 void draw_game_board(int display_map[2][10][10]) {
   int row, subrow, table, column, subcolumn;
   int selected_graphics_cell, selected_color;
@@ -605,6 +656,11 @@ void draw_game_board(int display_map[2][10][10]) {
     color_codes[2], color_codes[0]);
 }
 
+/********************************************************************************
+ * Handle main game logic
+ * Parameters:
+ *  - display_map: reference to the display map to be drawn
+********************************************************************************/
 void main_game(int display_map[2][10][10]) {
   bool game_running = true;
   while(game_running) {
@@ -613,6 +669,24 @@ void main_game(int display_map[2][10][10]) {
   }
 }
 
+/********************************************************************************
+ * Print a ship map for debug porpuses
+ * Parameters:
+ *  - ship_map: reference to the ship_map to be printed
+********************************************************************************/
+void debug_ship_map(ship_map[10][10]) {
+  int i, j;
+  for(i = 0; i < 10; i++) {
+    for (j = 0; j < 10; j++) {
+      printf("%-2d ", computer_ship_map[i][j]);
+    }
+    printf("\n");
+  }
+}
+
+/********************************************************************************
+ * Main function
+********************************************************************************/
 int main() {
   // Game wide maps
   int display_map[2][10][10];
@@ -620,27 +694,20 @@ int main() {
   int player_ship_lives [10] = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
   int computer_ship_map[10][10];
   int computer_ship_lives [10] = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
+
+  // Initialize maps
   init_display_map(display_map);
   init_ship_map(player_ship_map);
+  init_ship_map(computer_ship_map);
 
   // Init random nuber generator
   srand(time(0));
-  init_ship_map(computer_ship_map);
 
   // Position player ships
   ship_positioning_stage(display_map, player_ship_map, player_ship_lives);
 
   // Position the computer's ships
   position_random_ships(computer_ship_map, computer_ship_lives);
-
-  int i, j;
-
-  for(i = 0; i < 10; i++) {
-    for (j = 0; j < 10; j++) {
-      printf("%-2d ", computer_ship_map[i][j]);
-    }
-    printf("\n");
-  }
 
   // Start main game
   main_game(display_map);
