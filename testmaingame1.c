@@ -188,6 +188,20 @@ void init_ship_map(int ship_map[10][10]) {
 }
 
 /********************************************************************************
+ * Fills a hit map with default state
+ * Parameters
+ *  - hit_map: reference to the hit map that needs to be initialized
+********************************************************************************/
+void init_hit_map(bool hit_map[10][10]) {
+  int i, j;
+  for(i = 0; i < 10; i++) {
+    for(j = 0; j < 10; j++) {
+      hit_map[i][j] = false; 
+    }
+  }
+}
+
+/********************************************************************************
  * Gets coordinate as input from the user
  * Parameters
  *  - row: reference to the numerical index of the row the user has inputed
@@ -545,7 +559,7 @@ void position_random_multi_ship(int ship_map[10][10], int ship_index, int ship_l
     while(true) {
 
       // Get random direction
-      direction = (rand() % 1);
+      direction = (rand() % 2);
 
       break;
     }
@@ -657,16 +671,147 @@ void draw_game_board(int display_map[2][10][10]) {
 }
 
 /********************************************************************************
+ * Let player make a move
+ * Parameters
+ *  - display_map: reference to the display map on which to save the ships
+ *  - player_ship_map: reference to the player's ship map
+ *  - player_ship_lives: reference to the array of the amount of lives
+ *  					 each ship has
+ * Returns: 0 for miss, 1 for hit, 2 for hit and sunk
+********************************************************************************/
+int player_turn(int display_map[2][10][10], int computer_ship_map[10][10], int computer_ship_lives[10], bool player_hit_map[10][10]) {
+  int hit_row, hit_column;
+  bool is_horizontal_possible, is_vertical_possible; // Is_X_possible: 0 -> possible, 
+                                                     // 1 -> out of board, 2 -> ship in the way
+
+  int input_result = 0;	// Input Result: 0 -> success, 1 -> hit cell doesn't exist / hit out of board,
+						//               2 -> hit cell has already been hit
+
+  int ship_hit_index;
+  
+  int i;	// Counter
+  
+  // Get ship start position
+  while(true) {
+    draw_game_board(display_map);
+    printf("Fai la tua mossa.\n");
+    
+    // Print prompt
+    switch(input_result) {
+      case 0:
+        printf("Seleziona la casella ce vuoi colpire [es. D4] -> ");
+        break;
+      case 1:
+        printf("La casella inserita non esiste. Riprova [es. D4] -> ");
+        break;
+      case 2:
+        printf("Hai già colpito questa casella. Riprova [es. D4] -> ");
+        break;
+    }
+
+    // Get input from user
+    if(!get_input_coordinate(&hit_row, &hit_column)) {
+      input_result = 1;
+      continue;
+    };
+
+    // Verify that the player hasn't already hit there
+    if(player_hit_map[hit_row][hit_column]) {
+      input_result = 2;
+      continue;
+    }
+    break;
+   }
+
+		player_hit_map[hit_row][hit_column] = true;
+
+		// See if we hit a ship
+		ship_hit_index = computer_ship_map[hit_row][hit_column];
+		if(ship_hit_index != 99) {
+		display_map[1][hit_row][hit_column] = 1; // Update display map
+		computer_ship_lives[ship_hit_index]--; // Decrement lives of the ship we hit
+		if(computer_ship_lives[ship_hit_index] == 0) return 2; // The ship has no more lives left (ship sank)
+		return 1; // Report normal hit
+		}
+		else {
+		display_map[1][hit_row][hit_column] = 2; // Update display map
+		return 0;
+		}
+
+}
+
+/********************************************************************************
+ * Checks if one of the parties has won
+ * Parameters:
+ *  - player_ship_lives: reference to the player's ships' lives
+ *  - computer_ship_lives: reference to the computer's ships' lives
+ * Returns: 0 if noone has won, 1 if the player has won,
+ *          2 if the computer has won
+********************************************************************************/
+int check_for_victory(int player_ship_lives[10], int computer_ship_lives[10]) {
+  bool has_player_won = true, has_computer_won = true;
+  int i, j;
+  // Check if the player has won
+  for(i = 0; i < 10; i++) {
+    if(computer_ship_lives > 0) { // If the ship still has lives
+      has_player_won = false;
+	  break;
+	}
+  }
+
+  // If the player has won, we dont even check the computer
+  if(has_player_won) return 1;
+
+  // Check if the computer has won
+  for(i = 0; i < 10; i++) {
+    if(player_ship_lives > 0) { // If the ship still has lives
+      has_computer_won = false;
+	  break;
+	}
+  }
+  // If the computer has won
+  if(has_computer_won) return 2;
+
+  // If noone has won
+  return 0;
+}
+
+
+/********************************************************************************
  * Handle main game logic
  * Parameters:
  *  - display_map: reference to the display map to be drawn
+ * Returns: true if the player has won
 ********************************************************************************/
-void main_game(int display_map[2][10][10]) {
-  bool game_running = true;
+int main_game(int display_map[2][10][10], int player_ship_map[10][10], bool player_hit_map[10][10], int player_ship_lives[10], int computer_ship_map[10][10], bool computer_hit_map[10][10], int computer_ship_lives[10]) {
+  bool game_running = true, is_player_turn = true;
+  int turn_result, has_someone_won;
   while(game_running) {
-    draw_game_board(display_map);
-    sleep(10);
+    if(is_player_turn) {
+     turn_result = player_turn(display_map, computer_ship_map, computer_ship_lives, player_hit_map);
+	 switch(turn_result) {
+       case 0:
+			   printf("Mancato!");
+			   break;
+       case 1:
+			   printf("Colpito!");
+			   break;
+       case 2:
+			   printf("Colpito e affondato!");
+			   break;
+       }
+	}
+	fflush(stdout);
+	 sleep(1);
+
+
+	 // Check if someone has won
+    has_someone_won = check_for_victory(player_ship_lives, computer_ship_lives);
+
+	if(has_someone_won == 1) return true; // The player has won
+	else if( has_someone_won == 2) return false; // The computer has won
   }
+  return false;
 }
 
 /********************************************************************************
@@ -674,11 +819,11 @@ void main_game(int display_map[2][10][10]) {
  * Parameters:
  *  - ship_map: reference to the ship_map to be printed
 ********************************************************************************/
-void debug_ship_map(ship_map[10][10]) {
+void debug_ship_map(int ship_map[10][10]) {
   int i, j;
   for(i = 0; i < 10; i++) {
     for (j = 0; j < 10; j++) {
-      printf("%-2d ", computer_ship_map[i][j]);
+      printf("%-2d ", ship_map[i][j]);
     }
     printf("\n");
   }
@@ -691,14 +836,18 @@ int main() {
   // Game wide maps
   int display_map[2][10][10];
   int player_ship_map[10][10];
+  bool player_hit_map[10][10];
   int player_ship_lives [10] = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
   int computer_ship_map[10][10];
+  bool computer_hit_map[10][10];
   int computer_ship_lives [10] = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
 
   // Initialize maps
   init_display_map(display_map);
   init_ship_map(player_ship_map);
   init_ship_map(computer_ship_map);
+  init_hit_map(player_hit_map);
+  init_hit_map(computer_hit_map);
 
   // Init random nuber generator
   srand(time(0));
@@ -709,6 +858,12 @@ int main() {
   // Position the computer's ships
   position_random_ships(computer_ship_map, computer_ship_lives);
 
+  debug_ship_map(computer_ship_map);
+  sleep(10);
+
   // Start main game
-  main_game(display_map);
+  bool game_result = main_game(display_map, player_ship_map, player_hit_map, player_ship_lives, computer_ship_map, computer_hit_map, computer_ship_lives);
+
+  if(game_result) printf("Complimenti, hai vinto!");
+  else printf("Hai perso, riprova!");
 }
