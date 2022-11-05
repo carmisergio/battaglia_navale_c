@@ -93,7 +93,8 @@ char graphics_cells_colors[17][3] = {
 // 8: Bold blue
 // 9: Bold purple
 // 10: Bold light blue
-char *color_codes[11] = {"\033[0m", "\033[34m", "\033[37;1m", "\033[46;1m", "\033[41;1m", "\033[45;1m", "\033[92m", "\033[93m", "\033[94;1m", "\033[95m", "\033[96m"};
+// 11: Bold red
+char *color_codes[12] = {"\033[0m", "\033[34m", "\033[37;1m", "\033[46;1m", "\033[41;1m", "\033[45;1m", "\033[92m", "\033[93m", "\033[94;1m", "\033[95m", "\033[96m", "\033[91m"};
 
 // Letters for each row
 char letters[10] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
@@ -114,26 +115,26 @@ void draw_ship_select_board(int display_map[2][10][10])
   printf("\e[1;1H\e[2J");
 
   // Print graphics divider line
-  printf("%s# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #\n",
+  printf("%s┌───────────────────────────────────────────────────────────────────────────────────────────────┐\n",
          color_codes[2]);
 
   // Print the table title
-  printf("%s#                                   ## POSIZIONA LE TUE NAVI ##                                 #%s\n",
+  printf("%s│                                      POSIZIONA LE TUE NAVI                                    │%s\n",
          color_codes[2], color_codes[0]);
   // Print the legends and table row start line
-  printf("%s#%s                              1   2   3   4   5   6   7   8   9   10                           %s#%s\n",
+  printf("%s│%s                              1   2   3   4   5   6   7   8   9   10                           %s│%s\n",
          color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
-  printf("%s#%s                            ┏━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┓                          %s#%s\n",
+  printf("%s│%s                            ┏━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┓                          %s│%s\n",
          color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
 
   // Iterate on every row
   for (row = 0; row < 10; row++)
   {
     // Print the left column of hastags
-    printf("%s# %s", color_codes[2], color_codes[0]);
+    printf("%s│ %s", color_codes[2], color_codes[0]);
 
     // Print the left legend and the vertical table row start line
-    printf("                         %c |", letters[row]);
+    printf("                         %c ┃", letters[row]);
 
     // Iterate on every column inside a row
     for (column = 0; column < 10; column++)
@@ -155,19 +156,23 @@ void draw_ship_select_board(int display_map[2][10][10])
       }
 
       // Print the table column end line
-      printf("|");
+      printf("┃");
     }
 
     printf("     ");
 
-    printf("%s                     #%s", color_codes[2], color_codes[0]);
+    printf("%s                     │%s", color_codes[2], color_codes[0]);
     // Print the table row end line
-    printf("\n%s#%s                            ┗━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┛                          %s#%s",
-           color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
+    if (row < 9)
+      printf("\n%s│%s                            ┣━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━┫                          %s│%s",
+             color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
     printf("\n");
   }
+  printf("%s│%s                            ┗━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┛                          %s│%s\n",
+         color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
   // Print graphics divider
-  printf("%s# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #%s\n",
+  // printf("%s# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #%s\n",
+  printf("%s├───────────────────────────────────────────────────────────────────────────────────────────────┤%s\n",
          color_codes[2], color_codes[0]);
 }
 
@@ -374,15 +379,20 @@ void position_single_ship(int display_map[2][10][10], int player_ship_map[10][10
   {
     // Draw the ship select board
     draw_ship_select_board(display_map);
-    printf("%s# %sNave da posizionare:%s <=>                                                                      #%s\n", color_codes[2], color_codes[9], color_codes[2], color_codes[0]);
+    printf("%s│ %sNave da posizionare:%s <=>                                                                      │%s\n", color_codes[2], color_codes[9], color_codes[2], color_codes[0]);
+    printf("%s│                                                                                               │%s\n", color_codes[2], color_codes[0]);
 
     // Print prompt
     if (input_result && !already_positioned)
-      printf("%s# %sDove vuoi posizionarla? [es. D4] -> %s", color_codes[2], color_codes[10], color_codes[0]);
+      printf("%s│ %sDove vuoi posizionarla?                                                                       %s│%s\n", color_codes[2], color_codes[10], color_codes[2], color_codes[0]);
     else if (!input_result)
-      printf("La casella inserita non esiste. Riprova [es. D4] -> ");
+      printf("%s│ %sLa casella inserita non esiste. Riprova                                                       %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
     else
-      printf("Hai già posizionato una nave in questa casella. Riprova [es. D4] -> ");
+      printf("%s│ %sHai già posizionato una nave in questa casella. Riprova                                       %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
+
+    printf("%s└───────────────────────────────────────────────────────────────────────────────────────────────┘\n",
+           color_codes[2]);
+    printf("%s[es. D4] -> %s", color_codes[2], color_codes[0]);
 
     // Get input from user
     input_result = get_input_coordinate(&row, &column);
@@ -431,24 +441,28 @@ void position_multi_ship(int display_map[2][10][10], int player_ship_map[10][10]
   while (true)
   {
     draw_ship_select_board(display_map);
-    printf("Nave da posizionare: <=> x %d\n", ship_lives);
+    printf("%s│ %sNave da posizionare:%s <=> x %d                                                                  │%s\n", color_codes[2], color_codes[9], color_codes[2], ship_lives, color_codes[0]);
+    printf("%s│                                                                                               │%s\n", color_codes[2], color_codes[0]);
 
     // Print prompt
     switch (input_result)
     {
     case 0:
-      printf("Seleziona la casella di partenza [es. D4] -> ");
+      printf("%s│ %sSeleziona la casella di partenza                                                              %s│%s\n", color_codes[2], color_codes[10], color_codes[2], color_codes[0]);
       break;
     case 1:
-      printf("La casella inserita non esiste. Riprova [es. D4] -> ");
+      printf("%s│ %sLa casella inserita non esiste. Riprova                                                       %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
       break;
     case 2:
-      printf("Hai già positionato una nave in questa casella. Riprova [es. D4] -> ");
+      printf("%s│ %sHai già posizionato una nave in questa casella. Riprova                                       %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
       break;
     case 3:
-      printf("Non puoi posizionare una nave da %d a partire da questa casella. Riprova [es. D4] -> ", ship_lives);
+      printf("%s│ %sNon puoi posizionare una nave da %d a partire da questa casella. Riprova                       %s│%s\n", color_codes[2], color_codes[11], ship_lives, color_codes[2], color_codes[0]);
       break;
     }
+    printf("%s└───────────────────────────────────────────────────────────────────────────────────────────────┘\n",
+           color_codes[2]);
+    printf("%s[es. D4] -> %s", color_codes[2], color_codes[0]);
 
     // Get input from user
     if (!get_input_coordinate(&start_row, &start_column))
@@ -517,10 +531,14 @@ void position_multi_ship(int display_map[2][10][10], int player_ship_map[10][10]
 
       // Draw the board
       draw_ship_select_board(display_map);
-      printf("Nave da posizionare: <=> x %d\n", ship_lives);
+      printf("%s│ %sNave da posizionare:%s <=> x %d                                                                  │%s\n", color_codes[2], color_codes[9], color_codes[2], ship_lives, color_codes[0]);
+      printf("%s│                                                                                               │%s\n", color_codes[2], color_codes[0]);
 
       // Print prompt
-      printf("La nave è orizzontale o verticale? [o, v] -> ");
+      printf("%s│ %sLa nave è orizzontale o verticale?                                                            %s│%s\n", color_codes[2], color_codes[10], color_codes[2], color_codes[0]);
+      printf("%s└───────────────────────────────────────────────────────────────────────────────────────────────┘\n",
+             color_codes[2]);
+      printf("%s[o, v] -> %s", color_codes[2], color_codes[0]);
 
       // Get input from user
       if (!get_ship_direction(&direction))
@@ -762,28 +780,28 @@ void draw_game_board(int display_map[2][10][10])
   printf("\e[1;1H\e[2J");
 
   // Print graphics divider line
-  printf("%s# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #\n",
+  printf("%s┌───────────────────────────────────────────────────────────────────────────────────────────────┐\n",
          color_codes[2]);
 
   // Print the table titles
-  printf("#                    ## YOU ##                                       ## COMPUTER ##             #\n");
+  printf("│                       %sTU                                              %sCOMPUTER                %s│\n", color_codes[6], color_codes[7], color_codes[2]);
   // Print the legends and table row start line
-  printf("#%s      1   2   3   4   5   6   7   8   9   10           1   2   3   4   5   6   7   8   9   10  %s#\n",
+  printf("│%s      1   2   3   4   5   6   7   8   9   10           1   2   3   4   5   6   7   8   9   10  %s│\n",
          color_codes[0], color_codes[2]);
-  printf("#%s    +---+---+---+---+---+---+---+---+---+---+        +---+---+---+---+---+---+---+---+---+---+ %s#%s\n",
-         color_codes[0], color_codes[2], color_codes[0]);
+  printf("%s│%s    ┏━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┓        ┏━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┳━━━┓ %s│%s\n",
+         color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
 
   // Iterate on every row
   for (row = 0; row < 10; row++)
   {
     // Print the left column of hastags
-    printf("%s# %s", color_codes[2], color_codes[0]);
+    printf("%s│ %s", color_codes[2], color_codes[0]);
     // We need to print two tables: the player ship table and the computer hits table
     for (table = 0; table < 2; table++)
     {
 
       // Print the left legend and the vertical table row start line
-      printf(" %c |", letters[row]);
+      printf(" %c ┃", letters[row]);
 
       // Iterate on every column inside a row
       for (column = 0; column < 10; column++)
@@ -805,7 +823,7 @@ void draw_game_board(int display_map[2][10][10])
         }
 
         // Print the table column end line
-        printf("|");
+        printf("┃");
       }
 
       // Print space between tables
@@ -813,13 +831,18 @@ void draw_game_board(int display_map[2][10][10])
         printf("     ");
     }
 
-    printf("%s #%s", color_codes[2], color_codes[0]);
+    printf("%s │%s", color_codes[2], color_codes[0]);
     // Print the table row end line
-    printf("\n%s#    +---+---+---+---+---+---+---+---+---+---+        +---+---+---+---+---+---+---+---+---+---+ #%s", color_codes[2], color_codes[0]);
+    // printf("\n%s#    +---+---+---+---+---+---+---+---+---+---+        +---+---+---+---+---+---+---+---+---+---+ #%s", color_codes[2], color_codes[0]);
+    if (row < 9)
+      printf("\n%s│%s    ┣━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━┫        ┣━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━╋━━━┫ %s│%s",
+             color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
     printf("\n");
   }
+  printf("%s│%s    ┗━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┛        ┗━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┻━━━┛ %s│%s\n",
+         color_codes[2], color_codes[0], color_codes[2], color_codes[0]);
   // Print graphics divider
-  printf("%s# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #%s\n",
+  printf("%s├───────────────────────────────────────────────────────────────────────────────────────────────┤%s\n",
          color_codes[2], color_codes[0]);
 }
 
@@ -849,21 +872,25 @@ int player_turn(int display_map[2][10][10], int computer_ship_map[10][10], int c
   while (true)
   {
     draw_game_board(display_map);
-    printf("%sMossa: %sTU%s\n", color_codes[2], color_codes[6], color_codes[0]);
+    printf("%s│ %sMossa: %sTU%s                                                                                     │\n", color_codes[2], color_codes[9], color_codes[6], color_codes[2]);
+    printf("%s│                                                                                               │%s\n", color_codes[2], color_codes[0]);
 
     // Print prompt
     switch (input_result)
     {
     case 0:
-      printf("Seleziona la casella ce vuoi colpire [es. D4] -> ");
+      printf("%s│ %sSeleziona la casella che vuoi colpire                                                         %s│%s\n", color_codes[2], color_codes[10], color_codes[2], color_codes[0]);
       break;
     case 1:
-      printf("La casella inserita non esiste. Riprova [es. D4] -> ");
+      printf("%s│ %sLa casella inserita  non esiste. Riprova                                                      %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
       break;
     case 2:
-      printf("Hai già colpito questa casella. Riprova [es. D4] -> ");
+      printf("%s│ %sHai già colpito questa casella. Riprova                                                       %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
       break;
     }
+    printf("%s└───────────────────────────────────────────────────────────────────────────────────────────────┘\n",
+           color_codes[2]);
+    printf("%s[es. D4] -> %s", color_codes[2], color_codes[0]);
 
     // Get input from user
     if (!get_input_coordinate(&hit_row, &hit_column))
@@ -933,18 +960,15 @@ int computer_turn_easy(int display_map[2][10][10], int player_ship_map[10][10], 
   int i, j, k;
 
   draw_game_board(display_map);
-  printf("Mossa del computer:\n");
+  printf("%s│ %sMossa: %sCOMPUTER%s                                                                               │\n", color_codes[2], color_codes[9], color_codes[7], color_codes[2]);
 
   // hit_row = lastcellid / 10;
   // hit_column = lastcellid % 10;
   // lastcellid++;
 
-  // Find random cell not already hit
-  printf("More probable amount: %d", more_probable_amount);
   if (more_probable_amount > 0)
   {
     // Hit a  high probability target
-    printf("Hitting high probability target...");
     i = (rand() % more_probable_amount);
     hit_row = more_probable_rows[i];
     hit_column = more_probable_columns[i];
@@ -952,7 +976,6 @@ int computer_turn_easy(int display_map[2][10][10], int player_ship_map[10][10], 
   else
   {
     // Just hit a random target
-    printf("Hitting random target...");
     do
     {
       hit_row = (rand() % 10);
@@ -1096,7 +1119,6 @@ bool find_coordinate_to_hit_highprob(int ai_map[10][10], bool computer_hit_map[1
 bool find_first_hit_cell(int ai_map[10][10], int start_row, int start_column, int *row, int *column)
 {
   int i = start_row, j = start_column;
-  printf("Start row: %d\n", start_row);
   fflush(stdout);
 
   while (i < 10)
@@ -1135,11 +1157,11 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
   int ship_hit_index;
 
   draw_game_board(display_map);
-  printf("Mossa del computer:\n");
+  printf("%s│ %sMossa: %sCOMPUTER%s                                                                               │\n", color_codes[2], color_codes[9], color_codes[7], color_codes[2]);
 
   // Compute move
 
-  debug_ship_map(ai_map);
+  // debug_ship_map(ai_map);
 
   // See if there are ships hit but not sunk
   found_hit_andnot_sunk = find_first_hit_cell(ai_map, was_hit_row, was_hit_column, &was_hit_row, &was_hit_column);
@@ -1148,14 +1170,12 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
     selected_highprob_move = find_coordinate_to_hit_highprob(ai_map, computer_hit_map, was_hit_row, was_hit_column, &hit_row, &hit_column);
     while (!selected_highprob_move)
     {
-      printf("Was hit row: %d\n", was_hit_row);
       fflush(stdout);
       found_hit_andnot_sunk = find_first_hit_cell(ai_map, was_hit_row, was_hit_column + 1, &was_hit_row, &was_hit_column);
       if (found_hit_andnot_sunk)
       {
         selected_highprob_move = find_coordinate_to_hit_highprob(ai_map, computer_hit_map, was_hit_row, was_hit_column, &hit_row, &hit_column);
       }
-      sleep(1);
     }
   }
 
@@ -1168,8 +1188,6 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
       hit_column = (rand() % 10);
     } while (computer_hit_map[hit_row][hit_column]);
   }
-
-  printf("Hitting %c%d", letters[hit_row], hit_column + 1);
 
   computer_hit_map[hit_row][hit_column] = true;
 
@@ -1347,8 +1365,8 @@ int main()
   // Position the computer's ships
   position_random_ships(computer_ship_map, computer_ship_lives);
 
-  debug_ship_map(computer_ship_map);
-  sleep(10);
+  // debug_ship_map(computer_ship_map);
+  // sleep(10);
 
   // Start main game
   bool game_result = main_game(display_map, player_ship_map, player_hit_map, player_ship_lives, computer_ship_map, computer_hit_map, computer_ship_lives, 1);
