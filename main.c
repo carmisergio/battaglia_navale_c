@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
+#include <termios.h>
 
 /****************
  * Computer ai memory
@@ -94,7 +95,7 @@ char graphics_cells_colors[17][3] = {
 // 9: Bold purple
 // 10: Bold light blue
 // 11: Bold red
-char *color_codes[12] = {"\033[0m", "\033[34m", "\033[37;1m", "\033[46;1m", "\033[41;1m", "\033[45;1m", "\033[92m", "\033[93m", "\033[94;1m", "\033[95m", "\033[96m", "\033[91m"};
+char *color_codes[12] = {"\033[0m", "\033[34m", "\033[37;1m", "\033[46;1m", "\033[41;1m", "\033[45;1m", "\033[92m", "\033[93m", "\033[94;1m", "\033[35;1m", "\033[36;1m", "\033[31;1m"};
 
 // Letters for each row
 char letters[10] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
@@ -177,33 +178,6 @@ void draw_ship_select_board(int display_map[2][10][10])
 }
 
 /*
- * Screens:
- * 0: Mancato!
- * 1: Colpito!
- * 2: Colpito e affondato!
- */
-void draw_cut_screens(int screen)
-{
-  // Clear the screen
-  printf("\e[1;1H\e[2J");
-
-  switch (screen)
-  {
-  case 0:
-    printf("%s# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #%s\n",
-           color_codes[2], color_codes[0]);
-    printf("#                     ██████  ██████  ██      ██████  ██ ████████  ██████  ██ \n");
-    printf("#                    ██      ██    ██ ██      ██   ██ ██    ██    ██    ██ ██ \n");
-    printf("#                    ██      ██    ██ ██      ██████  ██    ██    ██    ██ ██ \n");
-    printf("#                    ██      ██    ██ ██      ██      ██    ██    ██    ██    \n");
-    printf("#                     ██████  ██████  ███████ ██      ██    ██     ██████  ██ \n");
-    printf("%s# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #%s\n",
-           color_codes[2], color_codes[0]);
-  }
-  sleep(2);
-}
-
-/********************************************************************************
  * Fills a display map with default state
  * Parameters:
  *  - display_map: reference to the display map that needs to be initialized
@@ -299,6 +273,7 @@ bool get_input_coordinate(int *row, int *column)
 {
   char raw_row;
   int raw_column, tmp_row, tmp_column;
+
   // Get input and fail if not succesful
   if (!scanf("%c%d", &raw_row, &raw_column))
     return false;
@@ -360,6 +335,35 @@ bool get_ship_direction(int *direction)
   }
 
   return false;
+}
+
+/********************************************************************************
+ * Lets user insert one character wihtout pressing enter
+ * Returns: char inputed
+ ********************************************************************************/
+char get_immediate_character()
+{
+
+  char input;
+  struct termios info, modified_info;
+
+  // Get current terminal settings and store them
+  tcgetattr(0, &info);
+
+  // Disable canonical mode on temrinal
+  modified_info = info;
+  modified_info.c_lflag &= ~ICANON;
+  modified_info.c_cc[VMIN] = 1;
+  modified_info.c_cc[VTIME] = 0;
+  tcsetattr(0, TCSANOW, &modified_info);
+
+  // Wait for character input
+  input = getchar();
+
+  // Reset terminal to default settings
+  tcsetattr(0, TCSANOW, &info);
+
+  return input;
 }
 
 /********************************************************************************
@@ -846,6 +850,32 @@ void draw_game_board(int display_map[2][10][10])
          color_codes[2], color_codes[0]);
 }
 
+void draw_hit_result_screen(int display_map[2][10][10], int hit_result)
+{
+  draw_game_board(display_map);
+
+  switch (hit_result)
+  {
+  case 0:
+    printf("%s│%s                                   ╔╦╗╔═╗╔╗╔╔═╗╔═╗╔╦╗╔═╗                                       %s│%s\n", color_codes[2], color_codes[10], color_codes[2], color_codes[0]);
+    printf("%s│%s                                   ║║║╠═╣║║║║  ╠═╣ ║ ║ ║                                       %s│%s\n", color_codes[2], color_codes[10], color_codes[2], color_codes[0]);
+    printf("%s│%s                                   ╩ ╩╩ ╩╝╚╝╚═╝╩ ╩ ╩ ╚═╝                                       %s│%s\n", color_codes[2], color_codes[10], color_codes[2], color_codes[0]);
+    break;
+  case 1:
+    printf("%s│%s                                    ╔═╗╔═╗╦  ╔═╗╦╔╦╗╔═╗                                        %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
+    printf("%s│%s                                    ║  ║ ║║  ╠═╝║ ║ ║ ║                                        %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
+    printf("%s│%s                                    ╚═╝╚═╝╩═╝╩  ╩ ╩ ╚═╝                                        %s│%s\n", color_codes[2], color_codes[11], color_codes[2], color_codes[0]);
+    break;
+  case 2:
+    printf("%s│%s                   ╔═╗╔═╗╦  ╔═╗╦╔╦╗╔═╗  ╔═╗  ╔═╗╔═╗╔═╗╔═╗╔╗╔╔╦╗╔═╗╔╦╗╔═╗                       %s│%s\n", color_codes[2], color_codes[9], color_codes[2], color_codes[0]);
+    printf("%s│%s                   ║  ║ ║║  ╠═╝║ ║ ║ ║  ║╣   ╠═╣╠╣ ╠╣ ║ ║║║║ ║║╠═╣ ║ ║ ║                       %s│%s\n", color_codes[2], color_codes[9], color_codes[2], color_codes[0]);
+    printf("%s│%s                   ╚═╝╚═╝╩═╝╩  ╩ ╩ ╚═╝  ╚═╝  ╩ ╩╚  ╚  ╚═╝╝╚╝═╩╝╩ ╩ ╩ ╚═╝                       %s│%s\n", color_codes[2], color_codes[9], color_codes[2], color_codes[0]);
+    break;
+  }
+  printf("%s└───────────────────────────────────────────────────────────────────────────────────────────────┘\n",
+         color_codes[2]);
+}
+
 /********************************************************************************
  * Let player make a move
  * Parameters
@@ -926,17 +956,20 @@ int player_turn(int display_map[2][10][10], int computer_ship_map[10][10], int c
             display_map[1][i][j] = 3; // Update display map
         }
       }
+      draw_hit_result_screen(display_map, 2);
       return 2; // The ship has no more lives left (ship sank)
     }
     else
     {
       display_map[1][hit_row][hit_column] = 1; // Update display map
-      return 1;                                // Report normal hit
+      draw_hit_result_screen(display_map, 1);
+      return 1; // Report normal hit
     }
   }
   else
   {
     display_map[1][hit_row][hit_column] = 2; // Update display map
+    draw_hit_result_screen(display_map, 0);
     return 0;
   }
 }
@@ -961,6 +994,10 @@ int computer_turn_easy(int display_map[2][10][10], int player_ship_map[10][10], 
 
   draw_game_board(display_map);
   printf("%s│ %sMossa: %sCOMPUTER%s                                                                               │\n", color_codes[2], color_codes[9], color_codes[7], color_codes[2]);
+  printf("%s│                                                                                               │%s\n", color_codes[2], color_codes[0]);
+  printf("%s│ %sSto pensando...%s                                                                               │\n", color_codes[2], color_codes[7], color_codes[2]);
+  printf("%s└───────────────────────────────────────────────────────────────────────────────────────────────┘\n",
+         color_codes[2]);
 
   // hit_row = lastcellid / 10;
   // hit_column = lastcellid % 10;
@@ -983,9 +1020,9 @@ int computer_turn_easy(int display_map[2][10][10], int player_ship_map[10][10], 
     } while (computer_hit_map[hit_row][hit_column]);
   }
 
-  printf("%c%d\n", letters[hit_row], hit_column);
-
   computer_hit_map[hit_row][hit_column] = true;
+
+  sleep(1);
 
   // See if we hit a ship
   ship_hit_index = player_ship_map[hit_row][hit_column];
@@ -1004,6 +1041,7 @@ int computer_turn_easy(int display_map[2][10][10], int player_ship_map[10][10], 
         }
       }
       more_probable_amount = 0;
+      draw_hit_result_screen(display_map, 2);
       return 2; // The ship has no more lives left (ship sank)
     }
     else
@@ -1058,12 +1096,14 @@ int computer_turn_easy(int display_map[2][10][10], int player_ship_map[10][10], 
       //   }
       // }
       // sleep(5);
+      draw_hit_result_screen(display_map, 1);
       return 1; // Report normal hit
     }
   }
   else
   {
     display_map[0][hit_row][hit_column] = 2; // Update display map
+    draw_hit_result_screen(display_map, 0);
     more_probable_amount = 0;
     return 0;
   }
@@ -1071,8 +1111,6 @@ int computer_turn_easy(int display_map[2][10][10], int player_ship_map[10][10], 
 
 bool find_coordinate_to_hit_highprob(int ai_map[10][10], bool computer_hit_map[10][10], int was_hit_row, int was_hit_column, int *hit_row, int *hit_column)
 {
-  printf("was_hit_row: %d\n", was_hit_row);
-  printf("was_hit_column: %d\n", was_hit_column);
   fflush(stdout);
   // Check possibilities for probable points
   if ((was_hit_row - 1) >= 0)
@@ -1158,6 +1196,10 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
 
   draw_game_board(display_map);
   printf("%s│ %sMossa: %sCOMPUTER%s                                                                               │\n", color_codes[2], color_codes[9], color_codes[7], color_codes[2]);
+  printf("%s│                                                                                               │%s\n", color_codes[2], color_codes[0]);
+  printf("%s│ %sSto pensando...%s                                                                               │\n", color_codes[2], color_codes[7], color_codes[2]);
+  printf("%s└───────────────────────────────────────────────────────────────────────────────────────────────┘\n",
+         color_codes[2]);
 
   // Compute move
 
@@ -1179,7 +1221,7 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
     }
   }
 
-  // Find coordinates to actually hit
+  // Find coordinates to hit if there isn't a highprob move available
   if (!selected_highprob_move)
   {
     do
@@ -1190,6 +1232,8 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
   }
 
   computer_hit_map[hit_row][hit_column] = true;
+
+  sleep(1);
 
   // See if we hit a ship
   ship_hit_index = player_ship_map[hit_row][hit_column];
@@ -1211,6 +1255,7 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
           }
         }
       }
+      draw_hit_result_screen(display_map, 2);
       return 2; // The ship has no more lives left (ship sank)
     }
     else
@@ -1218,14 +1263,137 @@ int computer_turn_difficult(int display_map[2][10][10], int player_ship_map[10][
       display_map[0][hit_row][hit_column] += 1; // Update display map
       ai_map[hit_row][hit_column] = 1;          // Set ai map to hit
     }
+    draw_hit_result_screen(display_map, 1);
     return 1; // Report normal hit
   }
   else
   {
     display_map[0][hit_row][hit_column] = 2; // Update display map
+    draw_hit_result_screen(display_map, 0);
     return 0;
   }
 }
+
+/*
+ * Draw the end screen with either victory or lost
+ * Parameters:
+ *  - bool has_won: result of the game. true for win, 0 for lost
+ */
+void draw_end_screens(bool has_won)
+{
+  // Clear the screen
+  printf("\e[1;1H\e[2J");
+
+  // If the player has won
+  if (has_won)
+  {
+    printf("%s┌───────────────────────────────────────────────────────────────────────────────────────────────┐\n", color_codes[2]);
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│%s              ██   ██  █████  ██     ██    ██ ██ ███    ██ ████████  ██████  ██                %s│\n", color_codes[6], color_codes[2]);
+    printf("│%s              ██   ██ ██   ██ ██     ██    ██ ██ ████   ██    ██    ██    ██ ██                %s│\n", color_codes[6], color_codes[2]);
+    printf("│%s              ███████ ███████ ██     ██    ██ ██ ██ ██  ██    ██    ██    ██ ██                %s│\n", color_codes[6], color_codes[2]);
+    printf("│%s              ██   ██ ██   ██ ██      ██  ██  ██ ██  ██ ██    ██    ██    ██                   %s│\n", color_codes[6], color_codes[2]);
+    printf("│%s              ██   ██ ██   ██ ██       ████   ██ ██   ████    ██     ██████  ██                %s│\n", color_codes[6], color_codes[2]);
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                     ╔════════════════════════════════════════════════╗                        │\n");
+    printf("│                     ║  Premi %s[R]%s per giocare ancora, %s[Q]%s per uscire. ║                        │\n", color_codes[10], color_codes[2], color_codes[11], color_codes[2]);
+    printf("│                     ╚════════════════════════════════════════════════╝                        │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("└───────────────────────────────────────────────────────────────────────────────────────────────┘\n");
+  }
+  else
+  {
+    printf("%s┌───────────────────────────────────────────────────────────────────────────────────────────────┐\n", color_codes[2]);
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│%s              ██   ██  █████  ██     ██████  ███████ ██████  ███████  ██████  ██               %s│\n", color_codes[11], color_codes[2]);
+    printf("│%s              ██   ██ ██   ██ ██     ██   ██ ██      ██   ██ ██      ██    ██ ██               %s│\n", color_codes[11], color_codes[2]);
+    printf("│%s              ███████ ███████ ██     ██████  █████   ██████  ███████ ██    ██ ██               %s│\n", color_codes[11], color_codes[2]);
+    printf("│%s              ██   ██ ██   ██ ██     ██      ██      ██   ██      ██ ██    ██                  %s│\n", color_codes[11], color_codes[2]);
+    printf("│%s              ██   ██ ██   ██ ██     ██      ███████ ██   ██ ███████  ██████  ██               %s│\n", color_codes[11], color_codes[2]);
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                     ╔═════════════════════════════════════════════════╗                       │\n");
+    printf("│                     ║  Premi %s[R]%s per giocare ancora, %s[Q]%s per uscire.  ║                       │\n", color_codes[10], color_codes[2], color_codes[11], color_codes[2]);
+    printf("│                     ╚═════════════════════════════════════════════════╝                       │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("│                                                                                               │\n");
+    printf("└───────────────────────────────────────────────────────────────────────────────────────────────┘\n");
+  }
+}
+
+/*
+ * Draw the end screen with either victory or lost
+ * Parameters:
+ *  - bool has_won: result of the game. true for win, 0 for lost
+ */
+void draw_splash_screen()
+{
+  // Clear the screen
+  printf("\e[1;1H\e[2J");
+
+  // Draw screen
+  printf("%s┌───────────────────────────────────────────────────────────────────────────────────────────────┐\n", color_codes[2]);
+  printf("│                                                                                               │\n");
+  printf("│                                                                                               │\n");
+  printf("│                                                                                               │\n");
+  printf("│                                                                                               │\n");
+  printf("│%s              ██████   █████  ████████ ████████  █████   ██████  ██      ██  █████             %s│\n", color_codes[10], color_codes[2]);
+  printf("│%s              ██   ██ ██   ██    ██       ██    ██   ██ ██       ██      ██ ██   ██            %s│\n", color_codes[10], color_codes[2]);
+  printf("│%s              ██████  ███████    ██       ██    ███████ ██   ███ ██      ██ ███████            %s│\n", color_codes[10], color_codes[2]);
+  printf("│%s              ██   ██ ██   ██    ██       ██    ██   ██ ██    ██ ██      ██ ██   ██            %s│\n", color_codes[10], color_codes[2]);
+  printf("│%s              ██████  ██   ██    ██       ██    ██   ██  ██████  ███████ ██ ██   ██            %s│\n", color_codes[10], color_codes[2]);
+  printf("│                                                                                               │\n");
+  printf("│                                                                                               │\n");
+  printf("│%s                        ███    ██  █████  ██    ██  █████  ██      ███████                     %s│\n", color_codes[11], color_codes[2]);
+  printf("│%s                        ████   ██ ██   ██ ██    ██ ██   ██ ██      ██                          %s│\n", color_codes[11], color_codes[2]);
+  printf("│%s                        ██ ██  ██ ███████ ██    ██ ███████ ██      █████                       %s│\n", color_codes[11], color_codes[2]);
+  printf("│%s                        ██  ██ ██ ██   ██  ██  ██  ██   ██ ██      ██                          %s│\n", color_codes[11], color_codes[2]);
+  printf("│%s                        ██   ████ ██   ██   ████   ██   ██ ███████ ███████                     %s│\n", color_codes[11], color_codes[2]);
+  printf("│                                                                                               │\n");
+  printf("│                                                                                               │\n");
+  printf("│                                                                                               │\n");
+  printf("│                                                                                               │\n");
+  printf("│                            ╔═══════════════════════════════════════╗                          │\n");
+  printf("│                            ║  Seleziona il livello di difficoltà:  ║                          │\n");
+  printf("│                            ║             %s[1]: Facile%s               ║                          │\n", color_codes[7], color_codes[2]);
+  printf("│                            ║            %s[2]: Difficile%s             ║                          │\n", color_codes[9], color_codes[2]);
+  printf("│                            ╚═══════════════════════════════════════╝                          │\n");
+  printf("│                                                                                               │\n");
+  printf("│                                                           %sSergio Carmine 3CITI - AS 2022/2023 %s│\n", color_codes[0], color_codes[2]);
+  printf("└───────────────────────────────────────────────────────────────────────────────────────────────┘\n");
+}
+
 /********************************************************************************
  * Checks if one of the parties has won
  * Parameters:
@@ -1280,6 +1448,8 @@ int main_game(int display_map[2][10][10], int player_ship_map[10][10], bool play
   bool game_running = true, is_player_turn = true;
   int ai_map[10][10];
 
+  bool thing = false; // TODO REMOVE
+
   // Initialize map for difficult mode
   if (ai_mode == 1)
     init_ai_map(ai_map);
@@ -1289,32 +1459,24 @@ int main_game(int display_map[2][10][10], int player_ship_map[10][10], bool play
   {
     if (is_player_turn)
     {
-      turn_result = player_turn(display_map, computer_ship_map, computer_ship_lives, player_hit_map);
-      switch (turn_result)
-      {
-      case 0:
-        printf("Mancato!");
-        break;
-      case 1:
-        draw_cut_screens(0);
-        break;
-      case 2:
-        printf("Colpito e affondato!");
-        break;
-      }
+      player_turn(display_map, computer_ship_map, computer_ship_lives, player_hit_map);
     }
     else
     {
       if (ai_mode == 0)
-        turn_result = computer_turn_easy(display_map, player_ship_map, player_ship_lives, computer_hit_map);
+        computer_turn_easy(display_map, player_ship_map, player_ship_lives, computer_hit_map);
       else if (ai_mode == 1)
-        turn_result = computer_turn_difficult(display_map, player_ship_map, player_ship_lives, computer_hit_map, ai_map);
+        computer_turn_difficult(display_map, player_ship_map, player_ship_lives, computer_hit_map, ai_map);
     }
     fflush(stdout);
     sleep(1);
 
     // Check if someone has won
     has_someone_won = check_for_victory(player_ship_lives, computer_ship_lives);
+
+    // draw_end_screens(thing);
+    // thing = !thing;
+    // sleep(5);
 
     // int j;
     // for (j = 0; j < 10; j++)
@@ -1335,6 +1497,46 @@ int main_game(int display_map[2][10][10], int player_ship_map[10][10], bool play
   return false;
 }
 
+void end_screen(bool game_result)
+{
+  char input;
+
+  // Draw end screen
+  draw_end_screens(game_result);
+
+  do
+  {
+    input = get_immediate_character();
+  } while (input != 'r' && input != 'q');
+
+  // If user wants to exit, exit
+  if (input == 'q')
+  {
+    // Clear the screen
+    printf("\e[1;1H\e[2J");
+    exit(0);
+  }
+}
+
+// Returns difficulty setting
+int splash_screen()
+{
+  char input;
+
+  // Draw end screen
+  draw_splash_screen();
+
+  while (true)
+  {
+    switch (get_immediate_character())
+    {
+    case '1':
+      return 0;
+    case '2':
+      return 1;
+    }
+  }
+}
 /********************************************************************************
  * Main function
  ********************************************************************************/
@@ -1349,30 +1551,36 @@ int main()
   bool computer_hit_map[10][10];
   int computer_ship_lives[10] = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
 
-  // Initialize maps
-  init_display_map(display_map);
-  init_ship_map(player_ship_map);
-  init_ship_map(computer_ship_map);
-  init_hit_map(player_hit_map);
-  init_hit_map(computer_hit_map);
+  // Difficulty setting
+  int difficulty;
 
   // Init random nuber generator
   srand(time(0));
 
-  // Position player ships
-  ship_positioning_stage(display_map, player_ship_map, player_ship_lives);
+  // Run game indefinitely
+  while (true)
+  {
+    // Initialize maps
+    init_display_map(display_map);
+    init_ship_map(player_ship_map);
+    init_ship_map(computer_ship_map);
+    init_hit_map(player_hit_map);
+    init_hit_map(computer_hit_map);
 
-  // Position the computer's ships
-  position_random_ships(computer_ship_map, computer_ship_lives);
+    difficulty = splash_screen();
 
-  // debug_ship_map(computer_ship_map);
-  // sleep(10);
+    // Position player ships
+    ship_positioning_stage(display_map, player_ship_map, player_ship_lives);
 
-  // Start main game
-  bool game_result = main_game(display_map, player_ship_map, player_hit_map, player_ship_lives, computer_ship_map, computer_hit_map, computer_ship_lives, 1);
+    // Position the computer's ships
+    position_random_ships(computer_ship_map, computer_ship_lives);
 
-  if (game_result)
-    printf("Complimenti, hai vinto!");
-  else
-    printf("Hai perso, riprova!");
+    // debug_ship_map(computer_ship_map);
+    // sleep(10);
+
+    // Start main game
+    bool game_result = main_game(display_map, player_ship_map, player_hit_map, player_ship_lives, computer_ship_map, computer_hit_map, computer_ship_lives, difficulty);
+
+    end_screen(game_result);
+  }
 }
