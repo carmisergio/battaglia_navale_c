@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <termios.h>
+#include <signal.h>
 
 /****************
  * Computer ai memory
@@ -231,6 +232,21 @@ void init_hit_map(bool hit_map[10][10])
   }
 }
 
+void init_ship_lives(int ship_lives[10])
+{
+  // int *ship_lives_tmp = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
+  int i, j;
+  int k = 0;
+  for (i = 0; i <= 3; i++)
+  {
+    for (j = 0; j <= i; j++)
+    {
+      ship_lives[k] = 4 - i;
+      k++;
+    }
+  }
+}
+
 void init_ai_map(int ai_map[10][10])
 {
   int i, j;
@@ -353,6 +369,7 @@ char get_immediate_character()
   // Disable canonical mode on temrinal
   modified_info = info;
   modified_info.c_lflag &= ~ICANON;
+  modified_info.c_lflag &= ~ECHO;
   modified_info.c_cc[VMIN] = 1;
   modified_info.c_cc[VTIME] = 0;
   tcsetattr(0, TCSANOW, &modified_info);
@@ -1537,6 +1554,15 @@ int splash_screen()
     }
   }
 }
+
+void ctrlcHandler(int dummy)
+{
+  // Clear the screen
+  printf("\e[1;1H\e[2J");
+
+  exit(1);
+}
+
 /********************************************************************************
  * Main function
  ********************************************************************************/
@@ -1546,16 +1572,19 @@ int main()
   int display_map[2][10][10];
   int player_ship_map[10][10];
   bool player_hit_map[10][10];
-  int player_ship_lives[10] = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
+  int player_ship_lives[10];
   int computer_ship_map[10][10];
   bool computer_hit_map[10][10];
-  int computer_ship_lives[10] = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
+  int computer_ship_lives[10];
 
   // Difficulty setting
   int difficulty;
 
   // Init random nuber generator
   srand(time(0));
+
+  // Bind CTRL+C handler
+  signal(SIGINT, ctrlcHandler);
 
   // Run game indefinitely
   while (true)
@@ -1566,7 +1595,10 @@ int main()
     init_ship_map(computer_ship_map);
     init_hit_map(player_hit_map);
     init_hit_map(computer_hit_map);
+    init_ship_lives(player_ship_lives);
+    init_ship_lives(computer_ship_lives);
 
+    // Draw splash screen and get difficulty from player
     difficulty = splash_screen();
 
     // Position player ships
